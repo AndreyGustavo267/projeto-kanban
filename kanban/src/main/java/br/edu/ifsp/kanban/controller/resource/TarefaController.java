@@ -25,7 +25,7 @@ public class TarefaController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public ResponseEntity<TarefaResponseDto> getTarefaPorId(@PathVariable Integer id) {
-        TarefaResponseDto tarefa = TarefaDtoFactory.canonicalToResponseDto(service.buscaTarefaPorId(id));
+        TarefaResponseDto tarefa = TarefaDtoFactory.canonicoParaDto(service.buscaTarefaPorId(id));
         if (tarefa != null) {
             return ResponseEntity.ok(tarefa);
         }

@@ -12,7 +12,7 @@ public class TarefaDtoFactory {
         return canonical;
     }
 
-    public static TarefaResponseDto canonicalToResponseDto(TarefaCanonical canonical) {
+    public static TarefaResponseDto canonicoParaDto(TarefaCanonical canonical) {
         TarefaResponseDto dto = new TarefaResponseDto();
         dto.setIdTarefa(canonical.getIdTarefa());
         dto.setTexto(canonical.getTexto());

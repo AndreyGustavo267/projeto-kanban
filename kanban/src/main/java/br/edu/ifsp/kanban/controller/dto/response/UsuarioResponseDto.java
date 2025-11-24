@@ -16,7 +16,7 @@ public class UsuarioResponseDto {
     private Integer idUsuario;
     private String nome;
     private String email;
-    private List<PaginaUsuarioResponseDto> paginas;
+    private List<PaginaResumoResponseDto> paginas;
 /*
     // Construtores
     public UsuarioResponseDto() {}
