@@ -1,5 +1,5 @@
 package br.edu.ifsp.kanban.service;
-
+/*
 import br.edu.ifsp.kanban.controller.dto.factoryDto.UsuarioDtoFactory;
 import br.edu.ifsp.kanban.controller.dto.request.LoginRequestDto;
 import br.edu.ifsp.kanban.controller.dto.response.TokenResponseDto;
@@ -36,7 +36,7 @@ public class AuthService {
     }
 
     public UsuarioResponseDto getMe(String email) {
-
+        System.out.println("Teste de email nulo" + email);
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
 
@@ -45,3 +45,4 @@ public class AuthService {
         return UsuarioDtoFactory.canonicoParaDto(canonical);
     }
 }
+*/

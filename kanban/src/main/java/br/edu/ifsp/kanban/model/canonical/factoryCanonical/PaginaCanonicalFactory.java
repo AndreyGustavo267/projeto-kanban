@@ -4,6 +4,7 @@ import br.edu.ifsp.kanban.model.canonical.PaginaCanonical;
 import br.edu.ifsp.kanban.model.entity.Pagina;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 public class PaginaCanonicalFactory {
@@ -30,7 +31,7 @@ public class PaginaCanonicalFactory {
         return e;
     }
 
-    public static List<PaginaCanonical> entityListTooCanonicalList(List<Pagina> entities) {
+    public static List<PaginaCanonical> entityListTooCanonicalList(Collection<Pagina> entities) {
         if (entities == null) return null;
         List<PaginaCanonical> list = new ArrayList<>();
         for (Pagina e : entities) list.add(entityToCanonical(e));

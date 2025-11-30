@@ -4,6 +4,7 @@ import br.edu.ifsp.kanban.controller.dto.request.TarefaRequestDto;
 import br.edu.ifsp.kanban.controller.dto.response.TarefaResponseDto;
 import br.edu.ifsp.kanban.model.canonical.TarefaCanonical;
 public class TarefaDtoFactory {
+
     public static TarefaCanonical dtoToCanonical(TarefaRequestDto dto) {
         TarefaCanonical canonical = new TarefaCanonical();
         canonical.setTexto(dto.getTexto());
@@ -20,3 +21,4 @@ public class TarefaDtoFactory {
         return dto;
     }
 }
+

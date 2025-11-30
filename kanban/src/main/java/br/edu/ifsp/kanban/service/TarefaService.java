@@ -13,73 +13,53 @@ import java.util.Optional;
 
 @Service
 public class TarefaService {
+
     @Autowired
     private TarefaRepository repository;
+
     @Autowired
     private BlocoService blocoService;
 
-    public Tarefa buscaPorId(Integer idTarefa) {
-        try {
-            Optional<Tarefa> tarefa = repository.findById(idTarefa);
-            return tarefa.orElse(null);
-        } catch (Exception e) {
-            throw new RuntimeException("Erro ao buscar tarefa.", e);
-        }
-    }
-
-    public Tarefa save(Tarefa tarefa) {
-        try {
-            return repository.save(tarefa);
-        } catch (Exception e) {
-            throw new RuntimeException("Erro ao salvar tarefa.", e);
-        }
-    }
-
-    public void delete(Integer idTarefa) {
-        try {
-            repository.deleteById(idTarefa);
-        } catch (Exception e) {
-            throw new RuntimeException("Erro ao deletar tarefa.", e);
-        }
-    }
-
     public TarefaCanonical buscaTarefaPorId(Integer idTarefa) {
-        TarefaCanonical tarefa = TarefaCanonicalFactory.entityToCanonical(buscaPorId(idTarefa));
-        Validator.erroSeNulo(tarefa, "Tarefa não encontrada.");
-        return tarefa;
+        return repository.findById(idTarefa)
+                .map(TarefaCanonicalFactory::entityToCanonical)
+                .orElseThrow(() -> new RuntimeException("Tarefa não encontrada."));
     }
 
-    public void atualizarTarefa(TarefaCanonical tarefaAtualizada) {
-        Validator.erroSeNulo(tarefaAtualizada, "Nenhum campo foi atualizado.");
+    public TarefaCanonical criarTarefa(TarefaCanonical nova) {
 
-        TarefaCanonical tarefa = buscaTarefaPorId(tarefaAtualizada.getIdTarefa());
+        Validator.erroSeNulo(nova.getTexto(), "Texto é obrigatório.");
+        Validator.erroSeNulo(nova.getIdBloco(), "Bloco é obrigatório.");
 
-        Validator.atribuirSeNaoNulo(tarefaAtualizada.getTexto(), tarefa::setTexto);
-        Validator.atribuirSeNaoNulo(tarefaAtualizada.isEstado(), tarefa::setEstado);
-        if (tarefaAtualizada.getIdBloco() != null) {
-            BlocoCanonical bloco = blocoService.buscaBlocoPorId(tarefaAtualizada.getIdBloco());
-            if (bloco != null) {
-                Validator.atribuirSeNaoNulo(bloco.getIdBloco(), tarefa::setIdBloco);
-            }
+        blocoService.buscaBlocoPorId(nova.getIdBloco());
+
+        Tarefa saved = repository.save(TarefaCanonicalFactory.canonicalToEntity(nova));
+        return TarefaCanonicalFactory.entityToCanonical(saved);
+    }
+
+    public TarefaCanonical atualizarTarefa(TarefaCanonical atualizada) {
+
+        Validator.erroSeNulo(atualizada.getIdTarefa(), "ID da tarefa é obrigatório.");
+
+        TarefaCanonical existente = buscaTarefaPorId(atualizada.getIdTarefa());
+
+        if (atualizada.getTexto() != null)
+            existente.setTexto(atualizada.getTexto());
+
+        // apenas se front enviar estado explicitamente
+        existente.setEstado(atualizada.isEstado());
+
+        if (atualizada.getIdBloco() != null) {
+            blocoService.buscaBlocoPorId(atualizada.getIdBloco());
+            existente.setIdBloco(atualizada.getIdBloco());
         }
-        save(TarefaCanonicalFactory.canonicalToEntity(tarefa));
-    }
 
-    public void criarTarefa(TarefaCanonical novaTarefa) {
-        Validator.erroSeNulo(novaTarefa, "Dados insuficientes para criar uma tarefa.");
-        Validator.erroSeNulo(novaTarefa.getTexto(), "Texto é um campo obrigatório.");
-        Validator.erroSeNulo(novaTarefa.isEstado(), "Estado é um campo obrigatório.");
-        Validator.erroSeNulo(novaTarefa.getIdBloco(), "Id bloco é um campo obrigatório.");
-
-        blocoService.buscaBlocoPorId(novaTarefa.getIdBloco());
-
-        save(TarefaCanonicalFactory.canonicalToEntity(novaTarefa));
+        Tarefa entitySaved = repository.save(TarefaCanonicalFactory.canonicalToEntity(existente));
+        return TarefaCanonicalFactory.entityToCanonical(entitySaved);
     }
 
     public void deletarTarefa(Integer idTarefa) {
-        TarefaCanonical tarefa = buscaTarefaPorId(idTarefa);
-        if (tarefa != null) {
-            delete(idTarefa);
-        }
+        buscaTarefaPorId(idTarefa); // valida
+        repository.deleteById(idTarefa);
     }
 }

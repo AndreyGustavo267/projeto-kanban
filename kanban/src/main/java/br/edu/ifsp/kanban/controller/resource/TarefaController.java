@@ -14,50 +14,37 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/tarefa")
 public class TarefaController {
+
     private final TarefaService service;
 
     public TarefaController(TarefaService service) {
         this.service = service;
     }
 
-    @GetMapping(
-            value = "/{id}",
-            produces = MediaType.APPLICATION_JSON_VALUE
-    )
+    @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<TarefaResponseDto> getTarefaPorId(@PathVariable Integer id) {
         TarefaResponseDto tarefa = TarefaDtoFactory.canonicoParaDto(service.buscaTarefaPorId(id));
-        if (tarefa != null) {
-            return ResponseEntity.ok(tarefa);
-        }
-        return ResponseEntity.status(404).build();
+        return ResponseEntity.ok(tarefa);
     }
 
-    @PostMapping(
-            consumes = MediaType.APPLICATION_JSON_VALUE,
-            produces = MediaType.APPLICATION_JSON_VALUE
-    )
-    public ResponseEntity<TarefaResponseDto> postTarefaPorId(TarefaRequestDto dto) {
-        service.criarTarefa(TarefaDtoFactory.dtoToCanonical(dto));
-        return ResponseEntity.ok().build();
-
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<TarefaResponseDto> criarTarefa(@RequestBody TarefaRequestDto dto) {
+        TarefaCanonical created = service.criarTarefa(TarefaDtoFactory.dtoToCanonical(dto));
+        return ResponseEntity.ok(TarefaDtoFactory.canonicoParaDto(created));
     }
 
-    @PutMapping(
-            value = "/{id}",
-            consumes = MediaType.APPLICATION_JSON_VALUE,
-            produces = MediaType.APPLICATION_JSON_VALUE
-    )
-    public ResponseEntity<TarefaResponseDto> putTarefaPorId(@PathVariable Integer id, TarefaRequestDto dto) {
+    @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<TarefaResponseDto> atualizarTarefa(@PathVariable Integer id,
+                                                             @RequestBody TarefaRequestDto dto) {
         TarefaCanonical canonical = TarefaDtoFactory.dtoToCanonical(dto);
         canonical.setIdTarefa(id);
-        service.atualizarTarefa(canonical);
-        return ResponseEntity.ok().build();
+
+        TarefaCanonical atualizado = service.atualizarTarefa(canonical);
+        return ResponseEntity.ok(TarefaDtoFactory.canonicoParaDto(atualizado));
     }
 
-    @DeleteMapping(
-            value = "/{id}"
-    )
-    public ResponseEntity<TarefaResponseDto> postTarefaPorId(@PathVariable Integer id) {
+    @DeleteMapping(value = "/{id}")
+    public ResponseEntity<Void> deletarTarefa(@PathVariable Integer id) {
         service.deletarTarefa(id);
         return ResponseEntity.noContent().build();
     }

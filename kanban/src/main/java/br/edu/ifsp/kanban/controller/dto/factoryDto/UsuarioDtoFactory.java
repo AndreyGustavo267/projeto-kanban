@@ -10,7 +10,6 @@ import java.util.List;
 
 public class UsuarioDtoFactory {
 
-
     public static UsuarioResponseDto canonicoParaDto(UsuarioCanonical canonical) {
         UsuarioResponseDto dto = new UsuarioResponseDto();
         dto.setIdUsuario(canonical.getIdUsuario());
