@@ -24,12 +24,18 @@ export function Home() {
   const navigate = useNavigate();
 
   const fetchUserData = async () => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-      const response = await fetch(`${API_BASE_URL}/usuario/2`);
-      if (!response.ok) throw new Error('Erro ao buscar dados do usuário');
-      const data = await response.json();
+      const email = localStorage.getItem('email'); // <--- pegando email do login
+      if (!email) throw new Error('Usuário não encontrado');
 
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/usuario/email/${email}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!response.ok) throw new Error('Erro ao buscar dados do usuário');
+
+      const data = await response.json();
       const formattedData: UserData = {
         id: data.idUsuario,
         name: data.nome,
@@ -40,7 +46,6 @@ export function Home() {
           path: `/page/${p.idPagina}`
         }))
       };
-
       setUserData(formattedData);
     } catch (error) {
       console.error(error);
@@ -54,7 +59,7 @@ export function Home() {
   }, []);
 
   const handleCreatePage = async () => {
-    if (!userData) return; // evita erro
+    if (!userData) return;
     try {
       const response = await fetch(`${API_BASE_URL}/pagina`, {
         method: 'POST',
@@ -80,9 +85,7 @@ export function Home() {
     }
   };
 
-  const handleViewPage = (pagePath: string) => {
-    navigate(pagePath);
-  };
+  const handleViewPage = (pagePath: string) => navigate(pagePath);
 
   const renderPageItem = (page: Page) => (
     <div
@@ -110,7 +113,7 @@ export function Home() {
       );
     }
 
-    if (!userData || !userData.pages || userData.pages.length === 0) {
+    if (!userData || userData.pages.length === 0) {
       return (
         <div className="col-12 mt-5">
           <div className="alert alert-info text-center" role="alert">
@@ -137,7 +140,7 @@ export function Home() {
             <strong>CopyOn</strong>
           </Link>
           <div className="d-flex align-items-center">
-            <span className="text-secondary me-3 d-none d-md-block" id="user-greeting">
+            <span className="text-secondary me-3 d-none d-md-block">
               {userData ? `Online - ${userData.name}` : 'Online'}
             </span>
             <button className="btn btn-outline-light btn-sm rounded-circle">
@@ -155,7 +158,7 @@ export function Home() {
 
           <div className="d-flex justify-content-between align-items-center mb-4">
             <h2 className="h4 mb-0 text-white">Suas páginas</h2>
-            <div className="d-flex justify-content-between align-items-center gap-2">
+            <div className="d-flex gap-2">
               <button className="btn btn-sm btn-primary" onClick={handleCreatePage}>
                 <i className="fa-solid fa-plus me-1"></i> Criar Página
               </button>
