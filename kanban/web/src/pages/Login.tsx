@@ -1,6 +1,6 @@
 import './Login.css';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import logo from '../assets/logo_copyon.png';
 
 const API_BASE_URL = 'http://localhost:8080/api';
@@ -26,9 +26,9 @@ export function Login() {
 
       const data = await response.json();
       localStorage.setItem('token', data.token);
-      localStorage.setItem('email', email); // <--- salvando email do usuário logado
+      localStorage.setItem('email', email);
 
-      navigate('/home'); // redireciona para home
+      navigate('/home');
     } catch (err: any) {
       setError(err.message);
     }
@@ -49,6 +49,7 @@ export function Login() {
               placeholder="usuario@gmail.com"
               value={email}
               onChange={e => setEmail(e.target.value)}
+              required
             />
             <label htmlFor="floatingInput">E-mail</label>
           </div>
@@ -61,13 +62,20 @@ export function Login() {
               placeholder="senha"
               value={senha}
               onChange={e => setSenha(e.target.value)}
+              required
             />
             <label htmlFor="floatingPassword">Senha</label>
           </div>
 
           {error && <div className="alert alert-danger">{error}</div>}
 
-          <button className="btn btn-primary w-100 py-2 my-3" type="submit">Entrar</button>
+          <button className="btn btn-primary w-100 py-2 my-3" type="submit">
+            Entrar
+          </button>
+
+          <div className="text-center">
+            <Link to="/criar_conta">Criar Conta</Link>
+          </div>
         </form>
       </main>
     </div>
