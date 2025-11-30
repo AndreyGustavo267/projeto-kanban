@@ -1,0 +1,115 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #212529;
+}
+
+.navbar {
+    background: rgba(33, 37, 41, 0.95);
+    border-bottom: 1px solid #495057;
+    backdrop-filter: blur(10px);
+}
+
+.note-card {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid #495057;
+    height: 200px;
+    position: relative;
+    overflow: hidden;
+    background-color: #2b3035;
+}
+
+.note-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+    border-color: #0d6efd;
+}
+
+.note-card .card-body {
+    display: flex;
+    flex-direction: column;
+}
+
+.note-preview {
+    color: #adb5bd;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+}
+
+.card-date {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-top: auto;
+}
+
+/* Cores baseadas em categorias (simuladas) */
+.border-left-default { border-left: 5px solid #0d6efd; }
+
+.fab {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background-color: #0d6efd;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    cursor: pointer;
+    transition: transform 0.2s, background-color 0.2s;
+    border: none;
+    z-index: 1000;
+}
+
+.fab:hover {
+    transform: scale(1.1);
+    background-color: #0b5ed7;
+}
+
+/* stylelint-disable-next-line */
+#editor-view {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(20px);
+    transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out, visibility 0.3s;
+}
+
+/* stylelint-disable-next-line */
+#editor-view.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+textarea.form-control {
+    background-color: #2b3035;
+    border-color: #495057;
+    color: #fff;
+    resize: none;
+}
+
+textarea.form-control:focus {
+    background-color: #2b3035;
+    color: #fff;
+    box-shadow: none;
+    border-color: #0d6efd;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Loading Spinner */
+.loader-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+}
