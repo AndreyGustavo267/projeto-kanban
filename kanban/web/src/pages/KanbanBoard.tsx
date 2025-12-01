@@ -237,42 +237,112 @@ export default function KanbanBoard() {
     carregarPagina();
   }, [id]);
 
-  async function criarTarefa(idBloco: number) {
+  async function atualizarBloco(blocoId: number, dados: { nome?: string; estado?: string; idPagina?: number }) {
+    try {
+        const token = localStorage.getItem("token");
+        
+        const response = await fetch(`http://localhost:8080/api/bloco/${blocoId}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                ...(token ? { Authorization: `Bearer ${token}` } : {})
+            },
+            body: JSON.stringify(dados)
+        });
+
+        if (!response.ok) throw new Error("Falha ao atualizar bloco.");
+        carregarPagina();
+    } catch (e) {
+        alert("Erro ao atualizar bloco.");
+    }
+}
+
+  async function moverBloco(idBloco: number, novoEstado: string) {
+        if (!pagina) return;
+        // Chama a função genérica para fazer o PUT, alterando o estado
+        await atualizarBloco(idBloco, { estado: novoEstado, idPagina: pagina.idPagina });
+        setOpenBlockDropdownId(null);
+    }
+
+    // ===================== CRIAR TAREFA =====================
+    async function criarTarefa(idBloco: number) {
     const texto = prompt("Texto da nova tarefa:");
     if (!texto) return;
 
-    await fetch("http://localhost:8080/api/tarefa", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        texto,
-        estado: false,
-        idBloco
-      })
-    });
+    try {
+        const token = localStorage.getItem("token");
+        const res = await fetch("http://localhost:8080/api/tarefa", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ texto, estado: false, idBloco })
+        });
 
-    carregarPagina();
-  }
+        if (!res.ok) throw new Error("Falha ao criar tarefa");
 
-  async function moverTarefa(idTarefa: number, idBlocoDestino: number) {
-    const tarefa = pagina?.blocos
-      .flatMap((b) => b.tarefas)
-      .find((t) => t.idTarefa === idTarefa);
+        await carregarPagina();
+    } catch (e) {
+        alert("Erro ao criar tarefa.");
+    }
+    }
 
-    if (!tarefa) return;
+    // ===================== ATUALIZAR TAREFA =====================
+    async function atualizarTarefa(
+        idTarefa: number,
+        dados: { texto?: string; estado?: boolean; idBloco?: number }
+        ) {
+        try {
+            const token = localStorage.getItem("token");
+            const res = await fetch(`http://localhost:8080/api/tarefa/${idTarefa}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                ...(token ? { Authorization: `Bearer ${token}` } : {})
+            },
+            body: JSON.stringify(dados)
+            });
 
-    await fetch(`http://localhost:8080/api/tarefa/${idTarefa}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        texto: tarefa.texto,
-        estado: tarefa.estado,
-        idBloco: idBlocoDestino
-      })
-    });
+            if (!res.ok) throw new Error("Falha ao atualizar tarefa");
 
-    carregarPagina();
-  }
+            await carregarPagina();
+        } catch (e) {
+            alert("Erro ao atualizar tarefa.");
+        }
+        }
+
+        async function renomearTarefa(tarefa: Tarefa) {
+    const novoTexto = prompt("Renomear tarefa:", tarefa.texto);
+    if (!novoTexto || novoTexto === tarefa.texto) return;
+
+    await atualizarTarefa(tarefa.idTarefa, { texto: novoTexto });
+    setOpenDropdownId(null); // fecha o dropdown
+    }
+
+    // ===================== TOGGLE CONCLUÍDA =====================
+    async function toggleConcluida(tarefa: Tarefa) {
+    await atualizarTarefa(tarefa.idTarefa, { estado: !tarefa.estado });
+    }
+
+  // ===================== DELETAR TAREFA =====================
+    async function deletarTarefa(idTarefa: number) {
+    if (!window.confirm("Deseja realmente excluir esta tarefa?")) return;
+
+    try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(`http://localhost:8080/api/tarefa/${idTarefa}`, {
+        method: "DELETE",
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+
+        if (!res.ok) throw new Error("Falha ao deletar tarefa");
+
+        await carregarPagina();
+    } catch (e) {
+        alert("Erro ao deletar tarefa.");
+    }
+    }
 
   if (loading) return <p>Carregando...</p>;
   if (erro) return <p>{erro}</p>;
@@ -285,7 +355,19 @@ export default function KanbanBoard() {
   const colDoing = pagina.blocos.filter((b) => b.estado === "doing");
   const colDone = pagina.blocos.filter((b) => b.estado === "done");
 
-  return (
+  
+
+  // ... (Dentro do componente KanbanBoard, antes do return) ...
+
+    const colunasDisponiveis = [
+        { nome: "To Do", estado: "todo" },
+        { nome: "Doing", estado: "doing" },
+        { nome: "Done", estado: "done" },
+    ];
+    
+// ... (O resto das suas funções) ...
+
+return (
     <div className="kanban-container">
       <header className="board-header">
         <div className="page-header-title-group"> {/* Container para o Título e Ações da Página */}
@@ -311,6 +393,8 @@ export default function KanbanBoard() {
                 >
                   Renomear Página
                 </button>
+                {/* Adicionando divisor para manter consistência no design do menu */}
+                <hr className="dropdown-divider" /> 
                 <button 
                   className="btn-dropdown-item btn-delete-page"
                   onClick={excluirPagina}
@@ -361,6 +445,27 @@ export default function KanbanBoard() {
                                 >
                                     Renomear Bloco
                                 </button>
+                                
+                                {/* ADICIONADO: LÓGICA DE MOVER BLOCO AQUI */}
+                                <hr className="dropdown-divider" />
+                                <h6 className="dropdown-header">Mover Bloco para:</h6>
+                                {colunasDisponiveis
+                                    .filter(col => col.estado !== bloco.estado) // Filtra a coluna atual
+                                    .map(colDestino => (
+                                        <button 
+                                            key={colDestino.estado}
+                                            className="btn-dropdown-item" 
+                                            onClick={() => {
+                                                moverBloco(bloco.idBloco, colDestino.estado); 
+                                                setOpenBlockDropdownId(null);
+                                            }}
+                                        >
+                                            {colDestino.nome}
+                                        </button>
+                                    ))}
+                                <hr className="dropdown-divider" />
+                                {/* FIM: LÓGICA DE MOVER BLOCO */}
+
                                 <button 
                                     className="btn-dropdown-item btn-delete-page"
                                     onClick={() => excluirBloco(bloco.idBloco, bloco.nome)}
@@ -373,62 +478,62 @@ export default function KanbanBoard() {
                 </div>
 
                 {bloco.tarefas.map((t) => (
-                  <div key={t.idTarefa} className="kanban-card">
-                    <div className="card-content">
-                      <input type="checkbox" checked={t.estado} readOnly />
-                      <div
-                        className={
-                          "card-text " + (t.estado ? "concluida" : "")
-                        }
-                      >
-                        {t.texto}
-                      </div>
-                      <div className="card-actions"> 
-                        
-                        <button className="btn-action">
-                          <i className="icon-dots"></i> 
-                        </button>
+                    <div key={t.idTarefa} className="kanban-card">
+                        <div className="card-content">
+                            {/* Checkbox para marcar como concluída */}
+                            <input
+                                type="checkbox"
+                                checked={t.estado}
+                                onChange={() => toggleConcluida(t)}
+                            />
 
-                        <div className="move-dropdown">
-                          <button 
-                            className="btn-action" 
-                            onClick={(e) => { 
-                                e.stopPropagation(); 
-                                toggleDropdown(t.idTarefa);
-                            }}
-                          >
-                            <i 
-                                className={`icon-chevron-down ${openDropdownId === t.idTarefa ? 'is-open' : ''}`}
-                            ></i>
-                          </button>
-
-                          {openDropdownId === t.idTarefa && (
-                            <div 
-                                className="dropdown-menu"
-                                onClick={(e) => e.stopPropagation()} 
-                            >
-                              <h6>Mover para:</h6>
-                              {[...colTodo, ...colDoing, ...colDone]
-                                .filter((b) => b.idBloco !== bloco.idBloco)
-                                .map((dest) => (
-                                  <button
-                                    key={dest.idBloco}
-                                    className="btn-dropdown-item"
-                                    onClick={() => {
-                                      moverTarefa(t.idTarefa, dest.idBloco);
-                                      setOpenDropdownId(null); 
-                                    }}
-                                  >
-                                    {dest.nome}
-                                  </button>
-                                ))}
+                            {/* Texto da tarefa */}
+                            <div className={"card-text " + (t.estado ? "concluida" : "")}>
+                                {t.texto}
                             </div>
-                          )}
+
+                            {/* Ações do cartão */}
+                            <div className="card-actions">
+                                {/* Botão dos três pontinhos */}
+                                <button
+                                    className="btn-action"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleDropdown(t.idTarefa); 
+                                    }}
+                                >
+                                    <i className="icon-dots"></i>
+                                </button>
+
+                                {/* Dropdown de ações da tarefa (NÃO TEM A OPÇÃO MOVER) */}
+                                {openDropdownId === t.idTarefa && (
+                                    <div className="dropdown-menu" onClick={(e) => e.stopPropagation()}>
+                                        {/* 1. Opção Renomear */}
+                                        <button
+                                            className="btn-dropdown-item"
+                                            onClick={() => renomearTarefa(t)}
+                                        >
+                                            Renomear tarefa
+                                        </button>
+
+                                        <hr className="dropdown-divider" />
+
+                                        {/* 2. Opção Excluir */}
+                                        <button
+                                            className="btn-dropdown-item btn-delete-task"
+                                            onClick={() => deletarTarefa(t.idTarefa)}
+                                        >
+                                            Excluir tarefa
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                      </div>
                     </div>
-                  </div>
                 ))}
+
+
+
 
                 <div className="add-task-container">
                   <button
@@ -491,6 +596,27 @@ export default function KanbanBoard() {
                                 >
                                     Renomear Bloco
                                 </button>
+                                
+                                {/* ADICIONADO: LÓGICA DE MOVER BLOCO AQUI */}
+                                <hr className="dropdown-divider" />
+                                <h6 className="dropdown-header">Mover Bloco para:</h6>
+                                {colunasDisponiveis
+                                    .filter(col => col.estado !== bloco.estado) // Filtra a coluna atual
+                                    .map(colDestino => (
+                                        <button 
+                                            key={colDestino.estado}
+                                            className="btn-dropdown-item" 
+                                            onClick={() => {
+                                                moverBloco(bloco.idBloco, colDestino.estado); 
+                                                setOpenBlockDropdownId(null);
+                                            }}
+                                        >
+                                            {colDestino.nome}
+                                        </button>
+                                    ))}
+                                <hr className="dropdown-divider" />
+                                {/* FIM: LÓGICA DE MOVER BLOCO */}
+
                                 <button 
                                     className="btn-dropdown-item btn-delete-page"
                                     onClick={() => excluirBloco(bloco.idBloco, bloco.nome)}
@@ -503,62 +629,60 @@ export default function KanbanBoard() {
                 </div>
 
                 {bloco.tarefas.map((t) => (
-                  <div key={t.idTarefa} className="kanban-card">
-                    <div className="card-content">
-                      <input type="checkbox" checked={t.estado} readOnly />
-                      <div
-                        className={
-                          "card-text " + (t.estado ? "concluida" : "")
-                        }
-                      >
-                        {t.texto}
-                      </div>
+                    <div key={t.idTarefa} className="kanban-card">
+                        <div className="card-content">
+                            {/* Checkbox para marcar como concluída */}
+                            <input
+                                type="checkbox"
+                                checked={t.estado}
+                                onChange={() => toggleConcluida(t)}
+                            />
 
-                      <div className="card-actions"> 
-                        <button className="btn-action">
-                          <i className="icon-dots"></i> 
-                        </button>
-                        
-                        <div className="move-dropdown">
-                          <button 
-                            className="btn-action" 
-                            onClick={(e) => { 
-                                e.stopPropagation();
-                                toggleDropdown(t.idTarefa);
-                            }}
-                          >
-                            <i 
-                                className={`icon-chevron-down ${openDropdownId === t.idTarefa ? 'is-open' : ''}`}
-                            ></i>
-                          </button>
-
-                          {openDropdownId === t.idTarefa && (
-                            <div 
-                                className="dropdown-menu"
-                                onClick={(e) => e.stopPropagation()} 
-                            >
-                              <h6>Mover para:</h6>
-                              {[...colTodo, ...colDoing, ...colDone]
-                                .filter((b) => b.idBloco !== bloco.idBloco)
-                                .map((dest) => (
-                                  <button
-                                    key={dest.idBloco}
-                                    className="btn-dropdown-item"
-                                    onClick={() => {
-                                      moverTarefa(t.idTarefa, dest.idBloco);
-                                      setOpenDropdownId(null);
-                                    }}
-                                  >
-                                    {dest.nome}
-                                  </button>
-                                ))}
+                            {/* Texto da tarefa */}
+                            <div className={"card-text " + (t.estado ? "concluida" : "")}>
+                                {t.texto}
                             </div>
-                          )}
+
+                            {/* Ações do cartão */}
+                            <div className="card-actions">
+                                {/* Botão dos três pontinhos */}
+                                <button
+                                    className="btn-action"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleDropdown(t.idTarefa); 
+                                    }}
+                                >
+                                    <i className="icon-dots"></i>
+                                </button>
+
+                                {/* Dropdown de ações da tarefa (NÃO TEM A OPÇÃO MOVER) */}
+                                {openDropdownId === t.idTarefa && (
+                                    <div className="dropdown-menu" onClick={(e) => e.stopPropagation()}>
+                                        {/* 1. Opção Renomear */}
+                                        <button
+                                            className="btn-dropdown-item"
+                                            onClick={() => renomearTarefa(t)}
+                                        >
+                                            Renomear tarefa
+                                        </button>
+
+                                        <hr className="dropdown-divider" />
+
+                                        {/* 2. Opção Excluir */}
+                                        <button
+                                            className="btn-dropdown-item btn-delete-task"
+                                            onClick={() => deletarTarefa(t.idTarefa)}
+                                        >
+                                            Excluir tarefa
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                      </div>
                     </div>
-                  </div>
                 ))}
+
 
                 <div className="add-task-container">
                   <button
@@ -621,6 +745,27 @@ export default function KanbanBoard() {
                                 >
                                     Renomear Bloco
                                 </button>
+
+                                {/* ADICIONADO: LÓGICA DE MOVER BLOCO AQUI */}
+                                <hr className="dropdown-divider" />
+                                <h6 className="dropdown-header">Mover Bloco para:</h6>
+                                {colunasDisponiveis
+                                    .filter(col => col.estado !== bloco.estado) // Filtra a coluna atual
+                                    .map(colDestino => (
+                                        <button 
+                                            key={colDestino.estado}
+                                            className="btn-dropdown-item" 
+                                            onClick={() => {
+                                                moverBloco(bloco.idBloco, colDestino.estado); 
+                                                setOpenBlockDropdownId(null);
+                                            }}
+                                        >
+                                            {colDestino.nome}
+                                        </button>
+                                    ))}
+                                <hr className="dropdown-divider" />
+                                {/* FIM: LÓGICA DE MOVER BLOCO */}
+                                
                                 <button 
                                     className="btn-dropdown-item btn-delete-page"
                                     onClick={() => excluirBloco(bloco.idBloco, bloco.nome)}
@@ -633,62 +778,60 @@ export default function KanbanBoard() {
                 </div>
 
                 {bloco.tarefas.map((t) => (
-                  <div key={t.idTarefa} className="kanban-card">
-                    <div className="card-content">
-                      <input type="checkbox" checked={t.estado} readOnly />
-                      <div
-                        className={
-                          "card-text " + (t.estado ? "concluida" : "")
-                        }
-                      >
-                        {t.texto}
-                      </div>
+                    <div key={t.idTarefa} className="kanban-card">
+                        <div className="card-content">
+                            {/* Checkbox para marcar como concluída */}
+                            <input
+                                type="checkbox"
+                                checked={t.estado}
+                                onChange={() => toggleConcluida(t)}
+                            />
 
-                      <div className="card-actions"> 
-                        <button className="btn-action">
-                          <i className="icon-dots"></i> 
-                        </button>
-                        
-                        <div className="move-dropdown">
-                          <button 
-                            className="btn-action" 
-                            onClick={(e) => { 
-                                e.stopPropagation();
-                                toggleDropdown(t.idTarefa);
-                            }}
-                          >
-                            <i 
-                                className={`icon-chevron-down ${openDropdownId === t.idTarefa ? 'is-open' : ''}`}
-                            ></i>
-                          </button>
-
-                          {openDropdownId === t.idTarefa && (
-                            <div 
-                                className="dropdown-menu"
-                                onClick={(e) => e.stopPropagation()} 
-                            >
-                              <h6>Mover para:</h6>
-                              {[...colTodo, ...colDoing, ...colDone]
-                                .filter((b) => b.idBloco !== bloco.idBloco)
-                                .map((dest) => (
-                                  <button
-                                    key={dest.idBloco}
-                                    className="btn-dropdown-item"
-                                    onClick={() => {
-                                      moverTarefa(t.idTarefa, dest.idBloco);
-                                      setOpenDropdownId(null);
-                                    }}
-                                  >
-                                    {dest.nome}
-                                  </button>
-                                ))}
+                            {/* Texto da tarefa */}
+                            <div className={"card-text " + (t.estado ? "concluida" : "")}>
+                                {t.texto}
                             </div>
-                          )}
+
+                            {/* Ações do cartão */}
+                            <div className="card-actions">
+                                {/* Botão dos três pontinhos */}
+                                <button
+                                    className="btn-action"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleDropdown(t.idTarefa); 
+                                    }}
+                                >
+                                    <i className="icon-dots"></i>
+                                </button>
+
+                                {/* Dropdown de ações da tarefa (NÃO TEM A OPÇÃO MOVER) */}
+                                {openDropdownId === t.idTarefa && (
+                                    <div className="dropdown-menu" onClick={(e) => e.stopPropagation()}>
+                                        {/* 1. Opção Renomear */}
+                                        <button
+                                            className="btn-dropdown-item"
+                                            onClick={() => renomearTarefa(t)}
+                                        >
+                                            Renomear tarefa
+                                        </button>
+
+                                        <hr className="dropdown-divider" />
+
+                                        {/* 2. Opção Excluir */}
+                                        <button
+                                            className="btn-dropdown-item btn-delete-task"
+                                            onClick={() => deletarTarefa(t.idTarefa)}
+                                        >
+                                            Excluir tarefa
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                      </div>
                     </div>
-                  </div>
                 ))}
+
 
                 <div className="add-task-container">
                   <button
